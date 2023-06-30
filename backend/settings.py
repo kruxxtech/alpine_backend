@@ -29,10 +29,11 @@ DEBUG = True
 
 # Configure the domain name using the environment variable
 # that Azure automatically creates for us.
-ALLOWED_HOSTS = ["smsalpine.azurewebsites.net", "127.0.0.1", "localhost"]
+ALLOWED_HOSTS = ["smsalpine.azurewebsites.net", "127.0.0.1", "localhost", "alpinebackend.azurewebsites.net"]
 CSRF_TRUSTED_ORIGINS = [
     "https://smsalpine.azurewebsites.net",
     "http://127.0.0.1",
+    "https://alpinebackend.azurewebsites.net",
 ]
 
 
