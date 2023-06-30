@@ -40,3 +40,8 @@ __pycache__/
 bin/
 lib/
 include/
+
+
+
+# ignore migration files
+**/migrations/
