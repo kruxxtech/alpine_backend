@@ -29,7 +29,12 @@ DEBUG = True
 
 # Configure the domain name using the environment variable
 # that Azure automatically creates for us.
-ALLOWED_HOSTS = ["smsalpine.azurewebsites.net", "127.0.0.1", "localhost", "alpinebackend.azurewebsites.net"]
+ALLOWED_HOSTS = [
+    "smsalpine.azurewebsites.net",
+    "127.0.0.1",
+    "localhost",
+    "alpinebackend.azurewebsites.net",
+]
 CSRF_TRUSTED_ORIGINS = [
     "https://smsalpine.azurewebsites.net",
     "http://127.0.0.1",
@@ -140,23 +145,23 @@ WSGI_APPLICATION = "backend.wsgi.application"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    # "default": {
-    #     "ENGINE": "django.db.backends.postgresql_psycopg2",
-    #     "NAME": "postgres_al",
-    #     "USER": "postgres",
-    #     "PASSWORD": "pawanjk23",
-    #     "HOST": "127.0.0.1",
-    #     "PORT": "5432",
-    # }
-    #  connect to azure postgres database
     "default": {
         "ENGINE": "django.db.backends.postgresql_psycopg2",
-        "NAME": "postgres",
-        "USER": "azuresms",
-        "PASSWORD": "alpinejk2313@",
-        "HOST": "alpinesms.postgres.database.azure.com",
+        "NAME": "postgres_al",
+        "USER": "postgres",
+        "PASSWORD": "pawanjk23",
+        "HOST": "127.0.0.1",
         "PORT": "5432",
     }
+    #  connect to azure postgres database
+    # "default": {
+    #     "ENGINE": "django.db.backends.postgresql_psycopg2",
+    #     "NAME": "postgres",
+    #     "USER": "azuresms",
+    #     "PASSWORD": "alpinejk2313@",
+    #     "HOST": "alpinesms.postgres.database.azure.com",
+    #     "PORT": "5432",
+    # }
 }
 
 

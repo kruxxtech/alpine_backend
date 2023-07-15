@@ -10,6 +10,12 @@ urlpatterns = [
     path("student/count/", views.students_count, name="student count"),
     path(
         "filters/name/<str:stu_name>/",
+        views.student_profile_by_name,
+        name="college_students_api",
+    ),
+    # student profile by id
+    path(
+        "student/<str:student_id>/",
         views.student_profile_by_id,
         name="college_students_api",
     ),
@@ -23,6 +29,7 @@ urlpatterns = [
         views.student_profile_detail_by_filters,
         name="college_students_api",
     ),
+    #
     #  fees urls
     path(
         "fee/<str:student_id>/",

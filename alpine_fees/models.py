@@ -1,5 +1,6 @@
 from django.db import models
-from alpine_students.models import Admission
+from alpine_students.models import Admission, Profile
+from alpine_gp.models import Course, College, Session
 
 
 # Create your models here.
@@ -53,6 +54,7 @@ class FeeReceipts(models.Model):
     other_fee = models.DecimalField(max_digits=8, decimal_places=2)
     pre_bal = models.DecimalField(max_digits=8, decimal_places=2)
     rebate = models.DecimalField(max_digits=8, decimal_places=2)
+    year = models.IntegerField()
     fee_date = models.DateField(auto_now_add=True)
     payment_method = models.CharField(max_length=100)
     reference_number = models.CharField(max_length=100, null=True, blank=True)

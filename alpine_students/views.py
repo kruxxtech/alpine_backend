@@ -58,7 +58,7 @@ def create_profile(request):
 
 
 @api_view(["GET"])
-def student_profile_by_id(request, stu_name):
+def student_profile_by_name(request, stu_name):
     try:
         admission = Admission.objects.filter(stu_name=stu_name)
         response_data = []
@@ -71,8 +71,29 @@ def student_profile_by_id(request, stu_name):
                 "contact_no": admission.contact_no,
                 "father_name": profile.father_name,
                 "student_id": admission.student_id,
+                "doj": admission.doj,
             }
             response_data.append(data)
+
+        return Response(response_data)
+    except (Admission.DoesNotExist, Profile.DoesNotExist):
+        return Response(status=404)
+
+
+#  get student profile by student_id
+
+
+@api_view(["GET"])
+def student_profile_by_id(request, student_id):
+    try:
+        admissions = Admission.objects.get(student_id=student_id)
+        response_data = [
+            {
+                "name": admissions.stu_name,
+                "doj": admissions.doj,
+                "enrol_id": admissions.enrol_id,
+            }
+        ]
 
         return Response(response_data)
     except (Admission.DoesNotExist, Profile.DoesNotExist):
