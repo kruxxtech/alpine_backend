@@ -153,31 +153,31 @@ def student_profile_detail_by_filters(request):
                                 + fee_balance.other_fee
                             )
                         )
+
+                        data = {
+                            "id": admission.enrol_id,
+                            "stu_name": admission.stu_name,
+                            "father_name": profile.father_name if profile else None,
+                            "contact_no": admission.contact_no,
+                            "student_id": admission.student_id,
+                            "college_id": admission.college_id,
+                            "crsid": admission.crsid,
+                            "prev_curr_bal": str(int(fee_balance.pre_bal))
+                            + " + "
+                            + str(curr_balance)
+                            if fee_balance
+                            else 0,
+                        }
+                        response_data.append(data)
+
+                        return Response(response_data)
                     except FeeBalance.DoesNotExist:
-                        curr_balance = None
-                        fee_balance = None
+                        return Response(status=404)
 
             except Promotion.DoesNotExist:
-                promotion = None
+                return Response(status=404)
             #  FeeBalance matching query does not exist, make curr_balance = 0
 
-            data = {
-                "id": admission.enrol_id,
-                "stu_name": admission.stu_name,
-                "father_name": profile.father_name if profile else None,
-                "contact_no": admission.contact_no,
-                "student_id": admission.student_id,
-                "college_id": admission.college_id,
-                "crsid": admission.crsid,
-                "prev_curr_bal": str(int(fee_balance.pre_bal))
-                + " + "
-                + str(curr_balance)
-                if fee_balance
-                else 0,
-            }
-            response_data.append(data)
-
-        return Response(response_data)
     except Admission.DoesNotExist:
         return Response(status=404)
 
