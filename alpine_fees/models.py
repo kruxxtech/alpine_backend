@@ -62,3 +62,18 @@ class FeeReceipts(models.Model):
 
     def __str__(self):
         return f"Receipt #{self.pk} - Student: {self.stu_name}"
+
+
+class FeeBalance(models.Model):
+    id = models.BigAutoField(primary_key=True, editable=False)
+    student = models.ForeignKey(Admission, on_delete=models.CASCADE)
+    reg_fee = models.DecimalField(max_digits=8, decimal_places=2)
+    sec_fee = models.DecimalField(max_digits=8, decimal_places=2)
+    tut_fee = models.DecimalField(max_digits=8, decimal_places=2)
+    other_fee = models.DecimalField(max_digits=8, decimal_places=2)
+    pre_bal = models.DecimalField(max_digits=8, decimal_places=2)
+    rebate = models.DecimalField(max_digits=8, decimal_places=2)
+    curr_year = models.IntegerField()
+
+    def __str__(self):
+        return f"Balance #{self.pk}"

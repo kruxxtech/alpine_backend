@@ -20,12 +20,7 @@ urlpatterns = [
         name="college_students_api",
     ),
     path(
-        "filters/<str:college_id>/",
-        views.student_profile_detail_by_filters,
-        name="college_students_api",
-    ),
-    path(
-        "filters/<str:college_id>/<str:crsid>/",
+        "filters/student_search/",
         views.student_profile_detail_by_filters,
         name="college_students_api",
     ),
@@ -38,7 +33,7 @@ urlpatterns = [
     ),
     path(
         "fee/<str:student_id>/<str:curr_year>/",
-        views.student_fee_by_year,
+        views.update_or_create_fee_balance,
         name="college_students_api",
     ),
     # search names

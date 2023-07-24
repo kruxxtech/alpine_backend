@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django.db.models import Max
 
 from .models import *
 
@@ -16,15 +17,38 @@ def getFeeDetails(request):
     return Response(serializer.data)
 
 
-#  get fees based on college_id, ssnid and crsid
+# get max fee_receipt_id
 @api_view(["GET"])
+def getFeeReceiptId(request):
+    fee_receipts = FeeReceipts.objects.all()
+    max_id = fee_receipts.aggregate(Max("id"))
+    return Response({"receipt_id": max_id})
+
+
+#  get fees based on college_id, ssnid and crsid
+@api_view(["GET", "POST"])
 def getFeeDetailsByCourse(request, college_id, ssnid, crsid):
-    try:
-        fees = FeeTable.objects.filter(college_id=college_id, ssnid=ssnid, crsid=crsid)
-        serializer = FeeTableSerializer(fees, many=True)
-        return Response(serializer.data)
-    except FeeTable.DoesNotExist:
-        return Response({"error": "Fee details not found"}, status=404)
+    if request.method == "GET":
+        try:
+            fees = FeeTable.objects.filter(
+                college_id=college_id, ssnid=ssnid, crsid=crsid
+            )
+            serializer = FeeTableSerializer(fees, many=True)
+            return Response(serializer.data)
+        except FeeTable.DoesNotExist:
+            return Response({"error": "Fee details not found"}, status=404)
+
+    if request.method == "POST":
+        data = request.data.copy()
+        data["college_id"] = college_id
+        data["ssnid"] = ssnid
+        data["crsid"] = crsid
+
+        serializer = FeeTableSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
 
 
 @api_view(["GET", "POST"])
@@ -57,9 +81,16 @@ def review_fee_receipt(request, student_id):
         admissions = Admission.objects.filter(student_id=student_id)
 
         response_data = []
-
+        # father_name issuw can be solved by creating a entry in profile table when student is admitted
+        # temporary solution
+        father_name = ""
         for admission in admissions:
-            profile = Profile.objects.get(student_id=admission.student_id)
+            try:
+                profile = Profile.objects.get(student_id=admission.student_id)
+                father_name = profile.father_name
+            except Profile.DoesNotExist:
+                father_name = ""
+
             college = College.objects.get(college_id=admission.college_id)
             course = Course.objects.get(crsid=admission.crsid)
             session = Session.objects.get(ssnid=admission.ssnid)
@@ -68,7 +99,7 @@ def review_fee_receipt(request, student_id):
             "student_id": admission.student_id,
             "enrol_id": admission.enrol_id,
             "stu_name": admission.stu_name,
-            "father": profile.father_name,
+            "father": father_name,
             "course": course.course,
             "session": session.ssntitle,
             # college info

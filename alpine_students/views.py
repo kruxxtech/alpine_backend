@@ -4,8 +4,10 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 from rest_framework import status
-from django.db.models import Max
-
+from django.db.models import Max, Sum, DecimalField
+from alpine_fees.models import FeeBalance
+from alpine_fees.serializers import FeeBalanceSerializer
+from django.db.models.functions import Coalesce
 
 from .models import *
 from .serializers import *
@@ -43,7 +45,14 @@ def getAdmissions(request):
 
         admsn_serializer = AdmissionSerializer(data=request.data)
         if admsn_serializer.is_valid():
-            admsn_serializer.save()
+            admission = admsn_serializer.save()
+            course = Course.objects.get(crsid=request.data["crsid"])
+            promotion = Promotion.objects.create(
+                curr_year=1,
+                status="new_admission",
+                _duration=course.duration,
+                student=admission,
+            )
             return JsonResponse(admsn_serializer.data, status=status.HTTP_201_CREATED)
         return JsonResponse(admsn_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -101,14 +110,20 @@ def student_profile_by_id(request, student_id):
 
 
 @api_view(["GET"])
-def student_profile_detail_by_filters(request, college_id=None, crsid=None):
+def student_profile_detail_by_filters(request):
     try:
+        student_name = request.GET.get("stu_name", None)
+        college_id = request.GET.get("college_id", None)
+        course_id = request.GET.get("course_id", None)
         admissions = Admission.objects.all()
 
-        if college_id:
+        if student_name is not None:
+            admissions = admissions.filter(stu_name__icontains=student_name)
+            print(admissions)
+        if college_id is not None:
             admissions = admissions.filter(college_id=college_id)
-        if crsid:
-            admissions = admissions.filter(crsid=crsid)
+        if course_id is not None:
+            admissions = admissions.filter(crsid=course_id)
 
         profiles = Profile.objects.filter(
             student_id__in=admissions.values_list("student_id", flat=True)
@@ -117,6 +132,35 @@ def student_profile_detail_by_filters(request, college_id=None, crsid=None):
         response_data = []
         for admission in admissions:
             profile = profiles.filter(student_id=admission.student_id).first()
+
+            try:
+                promotion = Promotion.objects.filter(
+                    student_id=admission.student_id
+                ).first()
+
+                if promotion is not None:
+                    try:
+                        fee_balance = FeeBalance.objects.get(
+                            student_id=admission.student_id,
+                            curr_year=promotion.curr_year,
+                        )
+
+                        curr_balance = str(
+                            int(
+                                fee_balance.reg_fee
+                                + fee_balance.tut_fee
+                                + fee_balance.sec_fee
+                                + fee_balance.other_fee
+                            )
+                        )
+                    except FeeBalance.DoesNotExist:
+                        curr_balance = None
+                        fee_balance = None
+
+            except Promotion.DoesNotExist:
+                promotion = None
+            #  FeeBalance matching query does not exist, make curr_balance = 0
+
             data = {
                 "id": admission.enrol_id,
                 "stu_name": admission.stu_name,
@@ -125,6 +169,11 @@ def student_profile_detail_by_filters(request, college_id=None, crsid=None):
                 "student_id": admission.student_id,
                 "college_id": admission.college_id,
                 "crsid": admission.crsid,
+                "prev_curr_bal": str(int(fee_balance.pre_bal))
+                + " + "
+                + str(curr_balance)
+                if fee_balance
+                else 0,
             }
             response_data.append(data)
 
@@ -140,7 +189,7 @@ def student_fee_by_id(request, student_id):
         response_data = []
 
         for admission in admission:
-            profile = Profile.objects.get(student_id=admission.student_id)
+            # profile = Profile.objects.get(student_id=admission.student_id)
             data = {
                 "id": admission.enrol_id,
                 "stu_name": admission.stu_name,
@@ -155,28 +204,57 @@ def student_fee_by_id(request, student_id):
 
 
 # merge with student_fee_by_id
-@api_view(["GET"])
-def student_fee_by_year(request, student_id, curr_year):
-    try:
-        admission = Admission.objects.filter(student_id=student_id)
-        response_data = []
+@api_view(["GET", "POST"])
+def update_or_create_fee_balance(request, student_id, curr_year):
+    if request.method == "GET":
+        try:
+            feeBalance = FeeBalance.objects.get(
+                student_id=student_id, curr_year=curr_year
+            )
 
-        admission_fee = "admsn_yr" + curr_year
-        tution_fee = "yr" + curr_year + "_fee"
+            response_data = []
 
-        for admission in admission:
             data = {
-                "reg_fee": admission.__getattribute__(admission_fee),
-                "tut_fee": admission.__getattribute__(tution_fee),
-                "sec_fee": 0,
-                "prev_bal": 0,
-                "other_fee": 0,
+                "reg_fee": feeBalance.reg_fee,
+                "tut_fee": feeBalance.tut_fee,
+                "sec_fee": feeBalance.sec_fee,
+                "pre_bal": feeBalance.pre_bal,
+                "other_fee": feeBalance.other_fee,
             }
             response_data.append(data)
 
-        return Response(response_data)
-    except (Admission.DoesNotExist, Profile.DoesNotExist):
-        return Response(status=404)
+            return Response(response_data)
+        except (Admission.DoesNotExist, Profile.DoesNotExist):
+            return Response(status=404)
+    if request.method == "POST":
+        try:
+            feeBalance = FeeBalance.objects.get(
+                student_id=student_id, curr_year=curr_year
+            )
+            serializer = FeeBalanceSerializer(feeBalance, data=request.data)
+            #  pre_bal will be initially
+            if serializer.is_valid():
+                validated_data = serializer.validated_data
+                fee_balance, created = FeeBalance.objects.update_or_create(
+                    student_id=validated_data.get("student_id"),
+                    curr_year=validated_data.get("curr_year"),
+                    defaults={
+                        "reg_fee": validated_data.get("reg_fee"),
+                        "sec_fee": validated_data.get("sec_fee"),
+                        "tut_fee": validated_data.get("tut_fee"),
+                        "other_fee": validated_data.get("other_fee"),
+                        "pre_bal": validated_data.get("pre_bal"),
+                        "rebate": validated_data.get("rebate"),
+                    },
+                )
+
+                return Response(
+                    FeeBalanceSerializer(fee_balance).data,
+                    status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+                )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except (Admission.DoesNotExist, Profile.DoesNotExist):
+            return Response(status=404)
 
 
 @api_view(["GET"])
@@ -191,21 +269,48 @@ def name_search(request):
 @api_view(["GET", "POST"])
 def promotion_update(request, student_id):
     try:
+        promotion = Promotion.objects.get(student_id=student_id)
+    except Promotion.DoesNotExist:
+        return Response(
+            {"error": "No entry found for this student"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    try:
         if request.method == "GET":
-            promotions = Promotion.objects.get(student_id=student_id)
-            serializer = PromotionSerializer(promotions, many=False)
+            serializer = PromotionSerializer(promotion, many=False)
             return Response(serializer.data)
 
     except Promotion.DoesNotExist:
         return Response(status=404)
-    # if request.method == "POST":
-    #     student_id = request.data.get("student_id")
-    #     status = request.data.get("status")
-    #     try:
-    #         promotion = Promotion.objects.get(student_id=student_id)
-    #     except Promotion.DoesNotExist:
-    #         return Response({"message": "Student no found."}, status=404)
 
-    #     if status == 'promoted':
-    #         promotion.year += 1
-    #         promotion.save()
+    #
+    if request.method == "POST":
+        serializer = PromotionSerializer(data=request.data)
+
+        promotion_status = request.data.get("status")
+
+        if promotion_status is None:
+            return Response(
+                {"error": "Status not provided"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        duration = promotion.duration
+        if promotion_status == "promoted":
+            if promotion.curr_year + 1 > duration:
+                promotion.status = "passed"
+            else:
+                promotion.status = "promoted"
+                promotion.curr_year += 1
+        elif promotion_status == "not_promoted":
+            # curr_year remains the same
+            pass
+        else:
+            promotion.status = promotion_status
+
+        promotion.save()
+
+        return Response(
+            PromotionSerializer(promotion).data, status=status.HTTP_201_CREATED
+        )
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
