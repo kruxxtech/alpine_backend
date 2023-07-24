@@ -119,9 +119,10 @@ def student_profile_detail_by_filters(request):
 
         if student_name is not None:
             admissions = admissions.filter(stu_name__icontains=student_name)
-            print(admissions)
+
         if college_id is not None:
             admissions = admissions.filter(college_id=college_id)
+
         if course_id is not None:
             admissions = admissions.filter(crsid=course_id)
 
@@ -137,7 +138,7 @@ def student_profile_detail_by_filters(request):
                 promotion = Promotion.objects.filter(
                     student_id=admission.student_id
                 ).first()
-
+                prev_curr_bal = 0
                 if promotion is not None:
                     try:
                         fee_balance = FeeBalance.objects.get(
@@ -154,30 +155,31 @@ def student_profile_detail_by_filters(request):
                             )
                         )
 
-                        data = {
-                            "id": admission.enrol_id,
-                            "stu_name": admission.stu_name,
-                            "father_name": profile.father_name if profile else None,
-                            "contact_no": admission.contact_no,
-                            "student_id": admission.student_id,
-                            "college_id": admission.college_id,
-                            "crsid": admission.crsid,
-                            "prev_curr_bal": str(int(fee_balance.pre_bal))
-                            + " + "
-                            + str(curr_balance)
-                            if fee_balance
-                            else 0,
-                        }
-                        response_data.append(data)
+                        prev_curr_bal = (
+                            str(int(fee_balance.pre_bal)) + " + " + str(curr_balance)
+                        )
 
-                        return Response(response_data)
                     except FeeBalance.DoesNotExist:
-                        return Response(status=404)
+                        prev_curr_bal = 0
+                        pass
+
+                data = {
+                    "id": admission.enrol_id,
+                    "stu_name": admission.stu_name,
+                    "father_name": profile.father_name if profile else None,
+                    "contact_no": admission.contact_no,
+                    "student_id": admission.student_id,
+                    "college_id": admission.college_id,
+                    "crsid": admission.crsid,
+                    "prev_curr_bal": prev_curr_bal,
+                }
+
+                response_data.append(data)
 
             except Promotion.DoesNotExist:
-                return Response(status=404)
+                return Response(status=status.HTTP_400_BAD_REQUEST)
             #  FeeBalance matching query does not exist, make curr_balance = 0
-
+        return Response(response_data, status=status.HTTP_200_OK)
     except Admission.DoesNotExist:
         return Response(status=404)
 
