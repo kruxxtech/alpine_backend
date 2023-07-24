@@ -78,6 +78,7 @@ class Profile(models.Model):
 
 
 PROMOTION_STATUS_CHOICES = [
+    ("new_admission", "New Admission"),
     ("promoted", "Promoted"),
     ("not_promoted", "Not Promoted"),
     ("passed", "Passed"),
