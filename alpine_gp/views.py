@@ -93,7 +93,7 @@ def getSession(request):
                 ssntitle=str(start_date.year) + "-" + str(end_date.year),
                 sdate=data["sdate"],
                 edate=data["edate"],
-                iscurrent=1,
+                iscurrent=data["iscurrent"],
             )
             return Response(data, status=status.HTTP_201_CREATED)
         except Session.DoesNotExist:
