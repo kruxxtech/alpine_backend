@@ -21,7 +21,19 @@ def getColleges(request):
         serializer = CollegeSerializer(colleges, many=True)
         return Response(serializer.data)
     if request.method == "POST":
-        serializer = CollegeSerializer(data=request.data)
+        # Check if college_id is provided in the request data
+        college_id = request.data.get("college_id")
+        if college_id:
+            try:
+                # get the existing college record by college_id
+                college = College.objects.get(college_id=college_id)
+                serializer = CollegeSerializer(college, data=request.data)
+            except College.DoesNotExist:
+                # If college_id does not correspond to an existing record, create a new one
+                serializer = CollegeSerializer(data=request.data)
+        else:
+            # If college_id is not provided, create a new record
+            serializer = CollegeSerializer(data=request.data)
 
         if serializer.is_valid():
             serializer.save()
@@ -45,16 +57,24 @@ def getCourses(request):
     if request.method == "POST":
         try:
             data = request.data
-
-            # Create a new Course object using the provided data
-            course = Course.objects.create(
-                college_id=data["college_id"],
-                course=data["course"],
-                duration=data["duration"],
-                crsid=data["crsid"],
-            )
+            try:
+                course_id = data.get("crsid")
+                course = Course.objects.get(crsid=course_id)
+                # Update the existing course object
+                course.college_id = data["college_id"]
+                course.course = data["course"]
+                course.duration = data["duration"]
+                course.save()
+            except Course.DoesNotExist:
+                # If no existing Course Object, create a new one
+                course = Course.objects.create(
+                    college_id=data["college_id"],
+                    course=data["course"],
+                    duration=data["duration"],
+                    crsid=data["crsid"],
+                )
             return Response(data, status=status.HTTP_201_CREATED)
-        except Course.DoesNotExist:
+        except:
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -87,16 +107,27 @@ def getSession(request):
             start_date = datetime.strptime(data["sdate"], "%Y-%m-%d").date()
             end_date = datetime.strptime(data["edate"], "%Y-%m-%d").date()
 
-            #  get year from date
-
-            session = Session.objects.create(
-                ssntitle=str(start_date.year) + "-" + str(end_date.year),
-                sdate=data["sdate"],
-                edate=data["edate"],
-                iscurrent=data["iscurrent"],
-            )
+            session_title = str(start_date.year) + "-" + str(end_date.year)
+            try:
+                session_id = data.get("ssnid")
+                # get the existing session record by ssnid
+                session = Session.objects.get(ssnid=session_id)
+                # Update the existing session object
+                session.ssntitle = session_title
+                session.sdate = data["sdate"]
+                session.edate = data["edate"]
+                session.iscurrent = data["iscurrent"]
+                session.save()
+            except Session.DoesNotExist:
+                # If no existing ssnid, create a new one
+                session = Session.objects.create(
+                    ssntitle=session_title,
+                    sdate=data["sdate"],
+                    edate=data["edate"],
+                    iscurrent=data["iscurrent"],
+                )
             return Response(data, status=status.HTTP_201_CREATED)
-        except Session.DoesNotExist:
+        except:
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
 
