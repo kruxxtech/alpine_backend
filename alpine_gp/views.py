@@ -131,11 +131,36 @@ def getSession(request):
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 def getAgents(request):
-    agents = Agent.objects.all()
-    serializer = AgentSerializer(agents, many=True)
-    return Response(serializer.data)
+    if request.method == "GET":
+        agents = Agent.objects.all()
+        serializer = AgentSerializer(agents, many=True)
+        return Response(serializer.data)
+
+    if request.method == "POST":
+        try:
+            data = request.data
+            try:
+                agentsid = data.get("agentsid")
+                agent = Agent.objects.get(agentsid=agentsid)
+                # Update the existing agent object
+                agent.agentname = data.get("agentname", agent.agentname)
+                agent.email = data.get("email", agent.email)
+                agent.contact = data.get("contact", agent.contact)
+                agent.save()
+            except Agent.DoesNotExist:
+                # If no existing Agent object, create a new one
+                agent = Agent.objects.create(
+                    agentsid=data["agentsid"],
+                    agentname=data.get("agentname"),
+                    email=data.get("email"),
+                    contact=data.get("contact"),
+                )
+            serializer = AgentSerializer(agent)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except:
+            return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
 
 # get college by id
