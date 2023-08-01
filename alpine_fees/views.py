@@ -30,8 +30,10 @@ def getFeeReceiptId(request):
 def getFeeDetailsByCourse(request, college_id, ssnid, crsid):
     if request.method == "GET":
         try:
-            fee = FeeTable.objects.get(college_id=college_id, ssnid=ssnid, crsid=crsid)
-            serializer = FeeTableSerializer(fee)
+            fees = FeeTable.objects.filter(
+                college_id=college_id, ssnid=ssnid, crsid=crsid
+            )
+            serializer = FeeTableSerializer(fees, many=True)
             return Response(serializer.data)
         except FeeTable.DoesNotExist:
             return Response({"error": "Fee details not found"}, status=404)
