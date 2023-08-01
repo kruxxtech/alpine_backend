@@ -90,23 +90,35 @@ def student_profile_by_name(request, stu_name):
 
 
 #  get student profile by student_id
-
-
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 def student_profile_by_id(request, student_id):
     try:
         admissions = Admission.objects.get(student_id=student_id)
-        response_data = [
-            {
-                "name": admissions.stu_name,
-                "doj": admissions.doj,
-                "enrol_id": admissions.enrol_id,
-            }
-        ]
+        if request.method == "GET":
+            response_data = [
+                {
+                    "name": admissions.stu_name,
+                    "doj": admissions.doj,
+                    "enrol_id": admissions.enrol_id,
+                }
+            ]
 
-        return Response(response_data)
+            return Response(response_data)
+        elif request.method == "POST":
+            try:
+                profile = Profile.objects.get(student_id=student_id)
+                serializer = ProfileSerializer(profile, data=request.data)
+            except Profile.DoesNotExist:
+                # Add the student_id to the request data before creating the new profile
+                request.data["student"] = student_id
+                serializer = ProfileSerializer(data=request.data)
+
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except (Admission.DoesNotExist, Profile.DoesNotExist):
-        return Response(status=404)
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(["GET"])
