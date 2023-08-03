@@ -126,7 +126,7 @@ def student_profile_detail_by_filters(request):
     try:
         student_name = request.GET.get("stu_name", None)
         college_id = request.GET.get("college_id", None)
-        course_id = request.GET.get("course_id", None)
+        course_id = request.GET.get("crsid", None)
         admissions = Admission.objects.all()
 
         if student_name is not None:
