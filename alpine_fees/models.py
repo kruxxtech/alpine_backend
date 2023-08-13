@@ -8,7 +8,7 @@ class FeeTable(models.Model):
     fee_id = models.AutoField(primary_key=True, editable=False, null=False)
     college_id = models.BigIntegerField()
     ssnid = models.BigIntegerField()
-    crsid = models.BigIntegerField()
+    crsid = models.CharField()
 
     security = models.BigIntegerField()
     other = models.BigIntegerField()
