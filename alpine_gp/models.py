@@ -21,7 +21,7 @@ class College(models.Model):
 
 
 class Course(models.Model):
-    crsid = models.BigIntegerField(primary_key=True, editable=False, unique=True)
+    crsid = models.CharField(max_length=20, primary_key=True, editable=False, unique=True)
     college = models.ForeignKey(College, on_delete=models.SET_NULL, null=True)
     course = models.CharField(null=True, blank=True)
     duration = models.IntegerField(null=True, blank=True)

@@ -7,7 +7,7 @@ from alpine_gp.models import Course
 class Admission(models.Model):
     student_id = models.AutoField(primary_key=True, editable=True, null=False)
     college_id = models.IntegerField(editable=True, null=False, blank=False)
-    crsid = models.IntegerField(editable=True, null=False, blank=False)
+    crsid = models.CharField(editable=True, null=False, blank=False)
     ssnid = models.IntegerField(editable=True, null=False, blank=False)
     enrol_id = models.CharField(
         editable=True, null=False, blank=False, max_length=100, unique=True
