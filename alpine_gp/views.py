@@ -83,15 +83,23 @@ def getCourses(request):
         data = request.data
 
         course_id = data.get("crsid")
-        course_name = data.get("course")
-        try:
-            # get the course with the provided crsid
+        if not course_id:
+            return Response(
+                {"error": "Course ID (crsid) is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        course_exists = Course.objects.filter(crsid=course_id).exists()
+        update_flag = data.get('update_flag', False)
+
+        # If the course with given course_id exists and update_flag is true
+        if course_exists and update_flag:
             course_instance = Course.objects.get(crsid=course_id)
 
             # Check if the updated course name exists for the given college
-            if Course.objects.filter(college_id=data["college_id"], course=course_name).exclude(crsid=course_id).exists():
+            if Course.objects.filter(college_id=data.get("college_id"), course=data["course"]).exclude(crsid=course_id).exists():
                 return Response(
-                    {"error": "Course name already exists."},
+                    {"error": "Course name already exists for the given college."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -101,22 +109,22 @@ def getCourses(request):
             course_instance.duration = data["duration"]
             course_instance.save()
 
-            # Serialize the updated course instance
             serializer = CourseSerializer(course_instance)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-        except Course.DoesNotExist:
-            # Check if the provided crsid is unique
-            if Course.objects.filter(crsid=course_id).exists():
-                return Response(
-                    {"error": "crsid already exists"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        # If the course with given course_id doesn't exist but update_flag is true
+        elif not course_exists and update_flag:
+            return Response(
+                {"error": "No Course found with the provided Course ID for updating."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
+        # If course doesn't exist and the intention is to create a new one
+        elif not course_exists:
             # Check if the given course name exists for the college
             if Course.objects.filter(college_id=data["college_id"], course=data["course"]).exists():
                 return Response(
-                    {"error": "Course name already exists."},
+                    {"error": "Course name already exists for the given college."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -130,8 +138,15 @@ def getCourses(request):
 
             serializer = CourseSerializer(course)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        # If course exists but the intention was not to update
+        else:
+            return Response(
+                {"error": "Course ID already exists."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
     else:
-        return Response(data, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return Response({"error": "Invalid request method"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 # get course by college_id
 @api_view(["GET"])
