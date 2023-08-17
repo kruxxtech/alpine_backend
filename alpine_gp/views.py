@@ -103,11 +103,30 @@ def getCourses(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Update the existing course object
-            course_instance.college_id = data["college_id"]
-            course_instance.course = data["course"]
-            course_instance.duration = data["duration"]
-            course_instance.save()
+            # Handle new_crsid case
+            new_crsid = data.get('new_crsid')
+            if new_crsid:
+                # Check if new_crsid doesn't already exist in the database
+                if Course.objects.filter(crsid=new_crsid).exists():
+                    return Response(
+                        {"error": "The new Course ID already exists."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # Delete the old course
+                course_instance.delete()
+
+                # Create a new course with the new_crsid
+                course_instance.pk = None  # Setting pk to None will create a new object on save
+                course_instance.crsid = new_crsid
+                course_instance.save()
+
+            else:
+                # Update the existing course object
+                course_instance.college_id = data["college_id"]
+                course_instance.course = data["course"]
+                course_instance.duration = data["duration"]
+                course_instance.save()
 
             serializer = CourseSerializer(course_instance)
             return Response(serializer.data, status=status.HTTP_200_OK)
