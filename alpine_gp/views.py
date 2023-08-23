@@ -303,3 +303,51 @@ def get_course_id(request, crsid):
     course = Course.objects.get(crsid=crsid)
     serializer = CourseSerializer(course, many=False)
     return JsonResponse(serializer.data)
+
+@api_view(["DELETE"])
+def delete_college(request, college_id):
+    """
+    View to handle the deletion of a College.
+    """
+    try:
+        college = College.objects.get(college_id=college_id)
+        college.delete()
+        return Response({"message": "College successfully deleted."}, status=status.HTTP_204_NO_CONTENT)
+    except College.DoesNotExist:
+        return Response({"error": "College with the given ID does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(["DELETE"])
+def delete_course(request, crsid):
+    """
+    View to handle the deletion of a Course.
+    """
+    try:
+        course = Course.objects.get(crsid=crsid)
+        course.delete()
+        return Response({"message": "Course successfully deleted."}, status=status.HTTP_204_NO_CONTENT)
+    except Course.DoesNotExist:
+        return Response({"error": "Course with the given ID does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(["DELETE"])
+def delete_session(request, ssnid):
+    """
+    View to handle the deletion of a Session.
+    """
+    try:
+        session = Session.objects.get(ssnid=ssnid)
+        session.delete()
+        return Response({"message": "Session successfully deleted."}, status=status.HTTP_204_NO_CONTENT)
+    except Session.DoesNotExist:
+        return Response({"error": "Session with the given ID does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(["DELETE"])
+def delete_agent(request, agentsid):
+    """
+    View to handle the deletion of an Agent.
+    """
+    try:
+        agent = Agent.objects.get(agentsid=agentsid)
+        agent.delete()
+        return Response({"message": "Agent successfully deleted."}, status=status.HTTP_204_NO_CONTENT)
+    except Agent.DoesNotExist:
+        return Response({"error": "Agent with the given ID does not exist."}, status=status.HTTP_404_NOT_FOUND)

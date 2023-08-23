@@ -20,4 +20,19 @@ urlpatterns = [
     path("sessions/", views.getSession, name="sessions"),
     path("agents/", views.getAgents, name="agents"),
     #  get college and course by id
+
+
+    # Delete Paths
+    # colleges delete endpoint
+    path("colleges/<str:college_id>/delete/", views.delete_college, name="delete_college"),
+
+    # courses delete endpoint
+    path("courses/<str:crsid>/delete/", views.delete_course, name="delete_course"),
+
+    # sessions delete endpoint
+    path("sessions/<str:ssnid>/delete/", views.delete_session, name="delete_session"),
+
+    # agents delete endpoint
+    path("agents/<str:agentsid>/delete/", views.delete_agent, name="delete_agent"),
+
 ]

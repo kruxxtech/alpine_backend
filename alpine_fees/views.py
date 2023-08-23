@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.db.models import Max
-
+from rest_framework import status
 from .models import *
 
 from .serializers import *
@@ -134,3 +134,16 @@ def review_fee_receipt(request, student_id):
         Session.DoesNotExist,
     ):
         return Response(status=404)
+
+
+@api_view(["DELETE"])
+def delete_fee(request, fee_id):
+    """
+    View to handle the deletion of a Fee based on fee_id.
+    """
+    try:
+        fee = FeeTable.objects.get(pk=fee_id)
+        fee.delete()
+        return Response({"message": "Fee details successfully deleted."}, status=status.HTTP_204_NO_CONTENT)
+    except FeeTable.DoesNotExist:
+        return Response({"error": "Fee details with the given ID do not exist."}, status=status.HTTP_404_NOT_FOUND)

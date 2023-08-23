@@ -16,4 +16,7 @@ urlpatterns = [
         views.review_fee_receipt,
         name="ReviewFeeReceipt",
     ),
+
+    # FeeTable delete endpoint
+    path("fees/<int:fee_id>/delete/", views.delete_fee, name="delete_fee"),
 ]
