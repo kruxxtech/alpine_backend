@@ -10,7 +10,7 @@ urlpatterns = [
     # courses
     path("courses/", views.getCourses, name="courses"),
     path("courses/count/", views.course_count, name="course count"),
-    path("courses/<int:crsid>", views.get_course_id, name="courses"),
+    path("courses/<str:crsid>", views.get_course_id, name="courses"),
     path(
         "colleges/<int:college_id>/courses/",
         views.course_list_by_college,
