@@ -10,4 +10,7 @@ urlpatterns = [
     path("register/", views.register_user, name="register_user"),
     path("getUsers/", views.get_user_list, name="get_user_list"),
     path("users/<int:user_id>/", views.user_detail, name="user_detail"),
+
+    #Delete Path
+    path("deleteUser/<str:user_id>/delete/", views.delete_user, name="delete_user"),
 ]

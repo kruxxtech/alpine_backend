@@ -54,7 +54,7 @@ def register_user(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(["GET", "PUT", "DELETE"])
+@api_view(["GET", "PUT"])
 def user_detail(request, user_id):
     try:
         user = User.objects.get(pk=user_id)
@@ -78,6 +78,11 @@ def user_detail(request, user_id):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    elif request.method == "DELETE":
+@api_view(["DELETE"])
+def delete_user(request, user_id):
+    try:
+        user = User.objects.get(pk=user_id)
         user.delete()
         return Response({"success": "User deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
