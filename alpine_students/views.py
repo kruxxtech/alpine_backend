@@ -328,3 +328,22 @@ def promotion_update(request, student_id):
             PromotionSerializer(promotion).data, status=status.HTTP_201_CREATED
         )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'POST'])
+def student_guardian_list(request):
+    if request.method == 'GET':
+        student_id = request.GET.get('student_id')
+        if student_id:
+            guardians = StudentGuardian.objects.filter(student_id=student_id)
+        else:
+            guardians = StudentGuardian.objects.all()
+
+        serializer = StudentGuardianSerializer(guardians, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        serializer = StudentGuardianSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

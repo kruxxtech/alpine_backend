@@ -16,21 +16,21 @@ class Admission(models.Model):
     doj = models.CharField(max_length=200)
     contact_no = models.BigIntegerField(editable=True)
 
-    admsn_yr1 = models.IntegerField(editable=True, null=True, blank=True)
-    admsn_yr2 = models.IntegerField(editable=True, null=True, blank=True)
-    admsn_yr3 = models.IntegerField(editable=True, null=True, blank=True)
-    admsn_yr4 = models.IntegerField(editable=True, null=True, blank=True)
-    admsn_yr5 = models.IntegerField(editable=True, null=True, blank=True)
-    admsn_yr6 = models.IntegerField(editable=True, null=True, blank=True)
+    admsn_yr1 = models.BigIntegerField(editable=True, null=True, blank=True)
+    admsn_yr2 = models.BigIntegerField(editable=True, null=True, blank=True)
+    admsn_yr3 = models.BigIntegerField(editable=True, null=True, blank=True)
+    admsn_yr4 = models.BigIntegerField(editable=True, null=True, blank=True)
+    admsn_yr5 = models.BigIntegerField(editable=True, null=True, blank=True)
+    admsn_yr6 = models.BigIntegerField(editable=True, null=True, blank=True)
 
-    security_fee = models.IntegerField(editable=True, null=True, blank=True)
-    other_fee = models.IntegerField(editable=True, null=True, blank=True)
-    yr1_fee = models.IntegerField(editable=True, null=True, blank=True)
-    yr2_fee = models.IntegerField(editable=True, null=True, blank=True)
-    yr3_fee = models.IntegerField(editable=True, null=True, blank=True)
-    yr4_fee = models.IntegerField(editable=True, null=True, blank=True)
-    yr5_fee = models.IntegerField(editable=True, null=True, blank=True)
-    yr6_fee = models.IntegerField(editable=True, null=True, blank=True)
+    security_fee = models.BigIntegerField(editable=True, null=True, blank=True)
+    other_fee = models.BigIntegerField(editable=True, null=True, blank=True)
+    yr1_fee = models.BigIntegerField(editable=True, null=True, blank=True)
+    yr2_fee = models.BigIntegerField(editable=True, null=True, blank=True)
+    yr3_fee = models.BigIntegerField(editable=True, null=True, blank=True)
+    yr4_fee = models.BigIntegerField(editable=True, null=True, blank=True)
+    yr5_fee = models.BigIntegerField(editable=True, null=True, blank=True)
+    yr6_fee = models.BigIntegerField(editable=True, null=True, blank=True)
     ref_by = models.IntegerField(null=True, blank=True)
     is_paid = models.CharField(max_length=20, null=True, blank=True)
     remark = models.CharField(max_length=200, null=True, blank=True)
@@ -106,3 +106,11 @@ class Promotion(models.Model):
 
     def __str__(self):
         return f"{self.student} - {self._duration}"
+
+class StudentGuardian(models.Model):
+    fathername = models.CharField(max_length=200, blank=True, null=True)
+    mothername = models.CharField(max_length=200, blank=True, null=True)
+    student = models.ForeignKey(Admission, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.fathername or self.mothername} - {self.student}"

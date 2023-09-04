@@ -1,8 +1,9 @@
 from django.shortcuts import render
+from alpine_students.models import StudentGuardian
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.db.models import Max
-
+from rest_framework import status
 from .models import *
 
 from .serializers import *
@@ -93,15 +94,25 @@ def review_fee_receipt(request, student_id):
         admissions = Admission.objects.filter(student_id=student_id)
 
         response_data = []
-        # father_name issuw can be solved by creating a entry in profile table when student is admitted
-        # temporary solution
         father_name = ""
+        mother_name = ""
+
         for admission in admissions:
-            try:
+            profile_exists = Profile.objects.filter(student_id=admission.student_id).exists()
+            if profile_exists:
                 profile = Profile.objects.get(student_id=admission.student_id)
                 father_name = profile.father_name
-            except Profile.DoesNotExist:
-                father_name = ""
+
+            if not father_name:
+                try:
+                    student_guardian = StudentGuardian.objects.get(student=admission)
+                    father_name = student_guardian.fathername or ""
+                    mother_name = student_guardian.mothername or ""
+                except StudentGuardian.DoesNotExist:
+                    pass
+
+            key = "father" if father_name else "mother"
+            name = father_name or mother_name
 
             college = College.objects.get(college_id=admission.college_id)
             course = Course.objects.get(crsid=admission.crsid)
@@ -111,7 +122,7 @@ def review_fee_receipt(request, student_id):
             "student_id": admission.student_id,
             "enrol_id": admission.enrol_id,
             "stu_name": admission.stu_name,
-            "father": father_name,
+            key: name,
             "course": course.course,
             "session": session.ssntitle,
             # college info
@@ -134,3 +145,16 @@ def review_fee_receipt(request, student_id):
         Session.DoesNotExist,
     ):
         return Response(status=404)
+
+
+@api_view(["DELETE"])
+def delete_fee(request, fee_id):
+    """
+    View to handle the deletion of a Fee based on fee_id.
+    """
+    try:
+        fee = FeeTable.objects.get(pk=fee_id)
+        fee.delete()
+        return Response({"message": "Fee details successfully deleted."}, status=status.HTTP_204_NO_CONTENT)
+    except FeeTable.DoesNotExist:
+        return Response({"error": "Fee details with the given ID do not exist."}, status=status.HTTP_404_NOT_FOUND)
