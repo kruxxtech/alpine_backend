@@ -11,6 +11,7 @@ from django.db.models.functions import Coalesce
 
 from .models import *
 from .serializers import *
+from alpine_gp.models import *
 
 # Create your views here.
 
@@ -105,21 +106,49 @@ def student_profile_by_id(request, student_id):
 
             return Response(response_data)
         elif request.method == "POST":
-            try:
-                profile = Profile.objects.get(student_id=student_id)
-                serializer = ProfileSerializer(profile, data=request.data)
-            except Profile.DoesNotExist:
-                # Add the student_id to the request data before creating the new profile
-                request.data["student"] = student_id
-                serializer = ProfileSerializer(data=request.data)
+            # Using get_or_create to either fetch an existing profile or create a new one
+            profile, created = Profile.objects.get_or_create(student=admissions)
 
+            data = request.data.copy()
+
+            data["student"] = admissions.student_id
+
+            serializer = ProfileSerializer(profile, data=data)
+
+            # If the serializer is valid, save the data
             if serializer.is_valid():
                 serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    except (Admission.DoesNotExist, Profile.DoesNotExist):
-        return Response(status=status.HTTP_404_NOT_FOUND)
+                if created:
+                    return_status = status.HTTP_201_CREATED
+                else:
+                    return_status = status.HTTP_200_OK
+                return Response(serializer.data, status=return_status)
 
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    except Admission.DoesNotExist:
+        return Response({'status': 'error', 'message': 'Student Admission not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#  get student Complete profile by student_id
+@api_view(["GET"])
+def student_complete_profile_by_id(request, student_id):
+    try:
+        admission = Admission.objects.get(student_id=student_id)
+
+        profile = admission.profile
+
+        serializer = ProfileSerializer(profile)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    except Admission.DoesNotExist:
+        return Response({'status': 'error', 'message': 'Admission not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except Profile.DoesNotExist:
+        return Response({'status': 'error', 'message': 'Profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(["GET"])
 def student_profile_detail_by_filters(request):
@@ -347,3 +376,35 @@ def student_guardian_list(request):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["GET"])
+def student_total_details_by_id(request, student_id):
+    try:
+        admission = Admission.objects.get(student_id=student_id)
+
+        # Fetch associated models
+        college = College.objects.get(college_id=admission.college_id)
+        course = Course.objects.get(crsid=admission.crsid)
+        profile = Profile.objects.get(student=admission)
+        promotion = Promotion.objects.get(student=admission)
+        session = Session.objects.get(ssnid=admission.ssnid)
+
+        # Convert the models into dictionaries, excluding fields that not needed
+        admission_fields = {f.name: getattr(admission, f.name) for f in Admission._meta.fields if f.name not in ["student_id"]}
+        profile_fields = {f.name: getattr(profile, f.name) for f in Profile._meta.fields if f.name not in ["id", "student"]}
+
+        data = {
+            "enrol_id": admission.enrol_id,
+            "stu_name": admission.stu_name,
+            "college_name": college.name,
+            "course_name": course.course,
+            "course_duration": course.duration,
+            "promotion_status": promotion.status,
+            "session_current_year": session.sdate,
+            **admission_fields,
+            **profile_fields
+        }
+
+        return Response(data)
+    except (Admission.DoesNotExist, Profile.DoesNotExist, College.DoesNotExist, Course.DoesNotExist, Promotion.DoesNotExist):
+        return Response(status=404)
