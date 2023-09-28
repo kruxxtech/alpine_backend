@@ -41,4 +41,8 @@ urlpatterns = [
     #  promotions urls
     path("promotions/<str:student_id>", views.promotion_update, name="promotions"),
     path('student-guardian/', views.student_guardian_list, name='student-guardian-list'),
+
+
+    path('student_total_details/<int:student_id>/', views.student_total_details_by_id, name='student_total_details_by_id'),
+    path('student_complete_profile/<int:student_id>/', views.student_complete_profile_by_id, name='student_complete_profile_by_id'),
 ]
