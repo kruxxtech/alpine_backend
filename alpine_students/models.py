@@ -1,5 +1,5 @@
 from django.db import models
-from alpine_gp.models import Course
+from alpine_gp.models import *
 
 # Create your models here.
 
