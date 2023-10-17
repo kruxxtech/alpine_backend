@@ -106,22 +106,28 @@ def student_profile_by_id(request, student_id):
 
             return Response(response_data)
         elif request.method == "POST":
-            # Using get_or_create to either fetch an existing profile or create a new one
-            profile, created = Profile.objects.get_or_create(student=admissions)
+            admissions = Admission.objects.get(student_id=student_id)
 
-            data = request.data.copy()
+            # Check if a profile exists for the admission
+            profile = Profile.objects.filter(student=admissions).first()
 
-            data["student"] = admissions.student_id
+            if profile:
+                # Update the profile
+                serializer = ProfileSerializer(profile, data=request.data, partial=True)
+            else:
+                # Create a new profile
+                new_data = request.data.copy()
+                new_data['student'] = admissions.student_id  # Add the student relationship to the data
+                serializer = ProfileSerializer(data=new_data)
 
-            serializer = ProfileSerializer(profile, data=data)
-
-            # If the serializer is valid, save the data
             if serializer.is_valid():
                 serializer.save()
-                if created:
-                    return_status = status.HTTP_201_CREATED
-                else:
+
+                if profile:
                     return_status = status.HTTP_200_OK
+                else:
+                    return_status = status.HTTP_201_CREATED
+
                 return Response(serializer.data, status=return_status)
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -222,7 +228,7 @@ def student_profile_detail_by_filters(request):
             #  FeeBalance matching query does not exist, make curr_balance = 0
         return Response(response_data, status=status.HTTP_200_OK)
     except Admission.DoesNotExist:
-        return Response(status=404)
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(["GET"])
@@ -243,7 +249,7 @@ def student_fee_by_id(request, student_id):
 
         return Response(response_data)
     except (Admission.DoesNotExist, Profile.DoesNotExist):
-        return Response(status=404)
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 
 # merge with student_fee_by_id
@@ -268,7 +274,7 @@ def update_or_create_fee_balance(request, student_id, curr_year):
 
             return Response(response_data)
         except (Admission.DoesNotExist, Profile.DoesNotExist):
-            return Response(status=404)
+            return Response(status=status.HTTP_404_NOT_FOUND)
     if request.method == "POST":
         try:
             feeBalance = FeeBalance.objects.get(
@@ -297,7 +303,7 @@ def update_or_create_fee_balance(request, student_id, curr_year):
                 )
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except (Admission.DoesNotExist, Profile.DoesNotExist):
-            return Response(status=404)
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(["GET"])
@@ -325,7 +331,7 @@ def promotion_update(request, student_id):
             return Response(serializer.data)
 
     except Promotion.DoesNotExist:
-        return Response(status=404)
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
     #
     if request.method == "POST":
@@ -385,13 +391,19 @@ def student_total_details_by_id(request, student_id):
         # Fetch associated models
         college = College.objects.get(college_id=admission.college_id)
         course = Course.objects.get(crsid=admission.crsid)
-        profile = Profile.objects.get(student=admission)
-        promotion = Promotion.objects.get(student=admission)
         session = Session.objects.get(ssnid=admission.ssnid)
 
-        # Convert the models into dictionaries, excluding fields that not needed
+        # Fetch the profile if it exists, otherwise set it to None
+        try:
+            profile = Profile.objects.get(student=admission)
+            profile_fields = {f.name: getattr(profile, f.name) for f in Profile._meta.fields if f.name not in ["id", "student"]}
+        except Profile.DoesNotExist:
+            profile = None
+            # Set all the profile fields to an empty string
+            profile_fields = {f.name: "" for f in Profile._meta.fields if f.name not in ["id", "student"]}
+
+        promotion = Promotion.objects.get(student=admission)
         admission_fields = {f.name: getattr(admission, f.name) for f in Admission._meta.fields if f.name not in ["student_id"]}
-        profile_fields = {f.name: getattr(profile, f.name) for f in Profile._meta.fields if f.name not in ["id", "student"]}
 
         data = {
             "enrol_id": admission.enrol_id,
@@ -406,5 +418,5 @@ def student_total_details_by_id(request, student_id):
         }
 
         return Response(data)
-    except (Admission.DoesNotExist, Profile.DoesNotExist, College.DoesNotExist, Course.DoesNotExist, Promotion.DoesNotExist):
-        return Response(status=404)
+    except (Admission.DoesNotExist, College.DoesNotExist, Course.DoesNotExist, Session.DoesNotExist):
+        return Response(status=status.HTTP_404_NOT_FOUND)
